@@ -50,24 +50,16 @@ namespace SG
             // This section is active only when the master thread guided to grab
             // available tasks
             {
-                try
-                {
-                    auto task = TaskQueue.popfront();
-                    task();
-                }
-                catch(const TaskQueue_t::NoObjectsException& e) {}
+                try { auto task = TaskQueue.popfront(); task(); }
+                catch (const TaskQueue_t::NoObjectsException& e) {}
             }
             // When we are out of the previous section, we have to firstly ensure
             // that the queue is empty
             bool empty = false;
             while (!empty)
             {
-                try
-                {
-                    auto task = TaskQueue.popfront();
-                    task();
-                }
-                catch(const TaskQueue_t::NoObjectsException& e) { empty = true; }
+                try { auto task = TaskQueue.popfront(); task(); }
+                catch (const TaskQueue_t::NoObjectsException& e) { empty = true; }
             }
         }
     };
@@ -116,6 +108,21 @@ namespace SG
             TaskQueue.pushback(std::forward<Func>(task));
         }
     };
+
+    // Another quite useful function that manages array elements among the workers
+    std::vector<std::size_t> BlockManager(std::size_t length, std::size_t numblocks)
+    {
+        std::vector<std::size_t> blocks(numblocks);
+        std::size_t minimal_size = length / numblocks;
+        std::size_t numspecial = length % numblocks;
+
+        for (std::size_t b = 0; b < numblocks; b++)
+        {
+            if (b < numspecial) { blocks[b] = minimal_size + 1;}
+            else { blocks[b] = minimal_size; }
+        }
+        return blocks;
+    }
 }
 
 // Push a copy of an lvalue, giving by the reference
