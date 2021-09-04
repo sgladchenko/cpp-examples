@@ -5,9 +5,11 @@
 #include <iomanip>
 #include <complex>
 #include <exception>
+#include <cassert>
 
-// While compiling under C++11, we can't use all the capabilites
-// of the constexpr keyword
+#include "immintrin.h"
+
+// While compiling under C++11, we can't use all the capabilites of the constexpr keyword
 #define __SG_CONSTEXPR_MATRIX__ /*constexpr*/
 
 namespace SG
@@ -59,7 +61,7 @@ namespace SG
         return result;
     }
 
-    // Frobenius norm of the matrix
+    // Frobenius (squared) norm of the matrix
     template <typename T, std::size_t N, std::size_t M>
     __SG_CONSTEXPR_MATRIX__
     T norm(const BaseMatrix<T,N,M>& matrix)
@@ -68,7 +70,7 @@ namespace SG
         for (std::size_t i=1; i<BaseMatrix<T,N,M>::bufsize; ++i) { result += square<T>(matrix.data[i]); }
         return result;
     }
-
+    
     template <typename T, std::size_t N, std::size_t M>
     struct Matrix : public BaseMatrix<T,N,M>
     {
@@ -82,7 +84,14 @@ namespace SG
         __SG_CONSTEXPR_MATRIX__ Matrix<T,N,M> operator-(const Matrix<T,N,M>& rhs) const;
         __SG_CONSTEXPR_MATRIX__ Matrix<T,N,M> operator*(const T& number) const;
         __SG_CONSTEXPR_MATRIX__ Matrix<T,N,M> operator/(const T& number) const;
+
+        __SG_CONSTEXPR_MATRIX__ Matrix<T,N,1> col(std::size_t j) const;
+        __SG_CONSTEXPR_MATRIX__ Matrix<T,1,M> row(std::size_t i) const;
     };
+
+    // And finally, two special cases of the vectors
+    template <typename T, std::size_t N> using ColVector = Matrix<T,N,1>;
+    template <typename T, std::size_t N> using RowVector = Matrix<T,1,N>;
 
     // Simple commutator of two matrices
     template <typename T, std::size_t N>
@@ -92,54 +101,83 @@ namespace SG
         return matrix1*matrix2 - matrix2*matrix1;
     }
 
-    // And finally, two special cases of the vectors
-    template <typename T, std::size_t N> using ColumnVector = Matrix<T,N,1>;
-    template <typename T, std::size_t N> using RowVector = Matrix<T,1,N>;
+    // Simple transpose of a matrix
+    template <typename T, std::size_t N, std::size_t M>
+    __SG_CONSTEXPR_MATRIX__
+    Matrix<T,M,N> transpose(const Matrix<T,N,M>& matrix)
+    {
+        Matrix<T,M,N> result;
+        for (std::size_t i=0; i<M; ++i)
+        {
+            for (std::size_t j=0; j<N; ++j) { result(i,j) = matrix(j,i); }
+        }
+        return result;
+    }
+
+    // Down below there's a separate implementation of several optimized
+    // matrix types (fixed size, what makes possible applying AVX2/SSE intrinsics)
 
     struct Matrix4x4d : public BaseMatrix<double,4,4>
     {
-        // Serparate implementation of the matrices using vectorization
         Matrix4x4d() {}
         Matrix4x4d(double object) : BaseMatrix<double,4,4>(object) {}
         Matrix4x4d(std::initializer_list<std::initializer_list<double>> initlist) :
                    BaseMatrix<double,4,4>(initlist) {}
 
-        // Arithmetic operations that are implemented via AVX/AVX2 
+        // Arithmetic operations that are implemented via SSE/AVX2 
         Matrix4x4d operator+(const Matrix4x4d& rhs) const;
         Matrix4x4d operator-(const Matrix4x4d& rhs) const;
-        Matrix4x4d operator*(double) const;
-        Matrix4x4d operator/(double) const;
+        Matrix4x4d operator*(double number) const;
+        Matrix4x4d operator/(double number) const;
+        // Row by row! Because they are aligned in this way
     };
+
+    /*
+    // More operations for these matrices
+
+    Matrix4x4d commutator(const Matrix4x4d& matrix1, const Matrix4x4d& matrix2)
+    {
+        return matrix1*matrix2 - matrix2*matrix1;
+    }
+    */
 
     // These are two separate types which made first of all in a view of the ability
     // of optimizing operations of multiplications on the matrices 4x4
 
-    struct ColumnVector4d : public BaseMatrix<double,4,1>
+    struct ColVector4d : public BaseMatrix<double,4,1>
     {
-        ColumnVector4d() {}
-        ColumnVector4d(double object) : BaseMatrix<double,4,1>(object) {}
-        ColumnVector4d(std::initializer_list<std::initializer_list<double>> initlist) :
-                       BaseMatrix<double,4,1>(initlist) {}
+        ColVector4d() {}
+        ColVector4d(double object) : BaseMatrix<double,4,1>(object) {}
+        ColVector4d(std::initializer_list<double> initlist)
+        {
+            assert((initlist.size() == 4)); // TODO: Add possible check in compile time via static_assert
+            std::size_t i = 0;
+            for (auto& each: initlist) { data[i] = each; i++; }
+        }
 
-        // Arithmetic operations that are implemented via AVX/AVX2 
-        ColumnVector4d operator+(const ColumnVector4d& rhs) const;
-        ColumnVector4d operator-(const ColumnVector4d& rhs) const;
-        ColumnVector4d operator*(double) const;
-        ColumnVector4d operator/(double) const;
+        // Arithmetic operations that are implemented via SSE/AVX2 
+        ColVector4d operator+(const ColVector4d& rhs) const;
+        ColVector4d operator-(const ColVector4d& rhs) const;
+        ColVector4d operator*(double number) const;
+        ColVector4d operator/(double number) const;
     };
 
     struct RowVector4d : public BaseMatrix<double,1,4>
     {
         RowVector4d() {}
         RowVector4d(double object) : BaseMatrix<double,1,4>(object) {}
-        RowVector4d(std::initializer_list<std::initializer_list<double>> initlist) :
-                    BaseMatrix<double,1,4>(initlist) {}
+        RowVector4d(std::initializer_list<double> initlist)
+        {
+            assert((initlist.size() == 4)); // TODO: Add possible check in compile time via static_assert
+            std::size_t i = 0;
+            for (auto& each: initlist) { data[i] = each; i++; }
+        }
 
-        // Arithmetic operations that are implemented via AVX/AVX2 
+        // Arithmetic operations that are implemented via SSE/AVX2 
         RowVector4d operator+(const RowVector4d& rhs) const;
         RowVector4d operator-(const RowVector4d& rhs) const;
-        RowVector4d operator*(double) const;
-        RowVector4d operator/(double) const;
+        RowVector4d operator*(double number) const;
+        RowVector4d operator/(double number) const;
     };
 }
 
@@ -156,13 +194,8 @@ SG::BaseMatrix<T,N,M>::BaseMatrix(std::initializer_list<std::initializer_list<T>
 {
     // Check the validity of the provided initializer list containing 
     // the initial matrix
-    if (initlist.size() != N) { throw std::runtime_error("Wrong dimensions while initialization of SG::Matrix"); } // or assert
-    for (const auto& each: initlist)
-    { 
-        if (each.size() != M) { throw std::runtime_error("Wrong dimensions while initialization of SG::Matrix"); }
-    }
-    // static_assert?... or anything better then just runtime checking
-    // (Only starting with C++17)
+    assert((initlist.size() == N)); // TODO: Add possible check in compile time via static_assert
+    for (const auto& each: initlist) { assert((each.size() == M)); }
 
     // Fill the data
     std::size_t i = 0;
@@ -174,8 +207,8 @@ SG::BaseMatrix<T,N,M>::BaseMatrix(std::initializer_list<std::initializer_list<T>
 
 template <typename T, std::size_t N, std::size_t M>
 std::ostream& operator<<(std::ostream& os, const SG::BaseMatrix<T,N,M>& object)
-// 'object' may refer to both SG::Matrix and SG::Matrix4x4d,
-// as they both inherited the interface of the BaseMatrix subobject 
+// 'object' may refer to all SG::Matrix, SG::Matrix4x4d,....
+// as they all inherited the interface of the BaseMatrix subobject 
 {
     // User-defined with and precision which were set before the invocation of this func
     auto width = os.width();
@@ -276,6 +309,12 @@ SG::Matrix<T,N,M> operator*(const SG::Matrix<T,N,P>& object1, const SG::Matrix<T
     }
     return result;
 }
+
+// Vectorized arithmetic operations on Matrix4x4d
+
+// Vectorized arithmetic operations of ColVector4d
+
+// Vectorized arithmetic operations of RowVector4d
 
 #endif
 
