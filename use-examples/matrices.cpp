@@ -22,6 +22,7 @@ int main()
     std::cout << "sigma_1 / 2.0:\n"     << std::setw(7) << sigma_1 / 2.0     << std::endl << std::endl;
 
     std::cout << "sigma_1 * sigma_2:\n" << std::setw(7) << sigma_1 * sigma_2 << std::endl << std::endl;
+    std::cout << "sigma_2.T:\n"         << std::setw(7) << sigma_2.T()       << std::endl << std::endl;
 
     // Some more sophisticated functionality
 

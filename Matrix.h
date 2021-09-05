@@ -17,102 +17,107 @@ namespace SG
     // Some pretty nice function used for evaluation of norms.
     // Note that when we're operating over the complexes, we must achieve
     // positiveness and realness of the result
-    template <typename T>
-    inline T square(const T& number) { return number * number; }
+    template <typename Type>
+    inline Type square(const Type& number) { return number * number; }
 
     // And instantiate for the complexes
     template <>
-    inline std::complex<double> square(const std::complex<double>& number) { return std::norm(number); }
+    inline std::complex<double>
+    square(const std::complex<double>& number) { return std::norm(number); }
 
     template <>
-    inline std::complex<float> square(const std::complex<float>& number) { return std::norm(number); }
+    inline std::complex<float>
+    square(const std::complex<float>& number) { return std::norm(number); }
 
     template <>
-    inline std::complex<long double> square(const std::complex<long double>& number) { return std::norm(number); }
+    inline std::complex<long double>
+    square(const std::complex<long double>& number) { return std::norm(number); }
 
     // Class providing key data members and function members for all the matrix types
-    template <typename T, std::size_t N, std::size_t M, std::size_t alignment = 0>
+    template <typename Type, std::size_t N, std::size_t M, std::size_t alignment = 0>
     struct BaseMatrix
     {
         // The inner structure containing the elements of the matrix
         static constexpr std::size_t bufsize = N*M;
-        alignas(alignment) T data[bufsize];
+        alignas(alignment) Type data[bufsize];
 
         static constexpr std::size_t rows = N; // Might be used in some contexts, where 
         static constexpr std::size_t cols = M; // we don't possess information about the type
         static constexpr std::size_t minimal = (N < M) ? N : M;
 
         __SG_CONSTEXPR_MATRIX__ BaseMatrix() {}
-        __SG_CONSTEXPR_MATRIX__ BaseMatrix(const T& object);
-        __SG_CONSTEXPR_MATRIX__ BaseMatrix(std::initializer_list<std::initializer_list<T>> initlist);
+        __SG_CONSTEXPR_MATRIX__ BaseMatrix(const Type& object);
+        __SG_CONSTEXPR_MATRIX__ BaseMatrix(std::initializer_list<std::initializer_list<Type>> initlist);
 
         // Non-const/const accessors (matrix indices)
-        __SG_CONSTEXPR_MATRIX__ T& operator()(std::size_t i, std::size_t j) { return data[i*cols + j]; }
-        __SG_CONSTEXPR_MATRIX__ const T& operator()(std::size_t i, std::size_t j) const { return data[i*cols + j]; }
+        __SG_CONSTEXPR_MATRIX__ Type& operator()(std::size_t i, std::size_t j) { return data[i*cols + j]; }
+        __SG_CONSTEXPR_MATRIX__ const Type& operator()(std::size_t i, std::size_t j) const { return data[i*cols + j]; }
     };
 
     // Simple trace, which is basically the sum of elements on the main diagonal
-    template <typename T, std::size_t N, std::size_t M, std::size_t alignment>
+    template <typename Type, std::size_t N, std::size_t M, std::size_t alignment>
     __SG_CONSTEXPR_MATRIX__
-    T tr(const BaseMatrix<T,N,M,alignment>& matrix)
+    Type tr(const BaseMatrix<Type,N,M,alignment>& matrix)
     {
-        T result = matrix(0,0);
-        for (std::size_t i=1; i<BaseMatrix<T,N,M>::minimal; ++i) { result += matrix(i,i); }
+        Type result = matrix(0,0);
+        for (std::size_t i=1; i<BaseMatrix<Type,N,M>::minimal; ++i) { result += matrix(i,i); }
         return result;
     }
 
     // Frobenius (squared) norm of the matrix
-    template <typename T, std::size_t N, std::size_t M, std::size_t alignment>
+    template <typename Type, std::size_t N, std::size_t M, std::size_t alignment>
     __SG_CONSTEXPR_MATRIX__
-    T norm(const BaseMatrix<T,N,M,alignment>& matrix)
+    Type norm(const BaseMatrix<Type,N,M,alignment>& matrix)
     {
-        T result = square(matrix.data[0]);
-        for (std::size_t i=1; i<BaseMatrix<T,N,M>::bufsize; ++i) { result += square<T>(matrix.data[i]); }
+        Type result = square(matrix.data[0]);
+        for (std::size_t i=1; i<BaseMatrix<Type,N,M>::bufsize; ++i) { result += square<Type>(matrix.data[i]); }
         return result;
     }
     
-    template <typename T, std::size_t N, std::size_t M>
-    struct Matrix : public BaseMatrix<T,N,M>
+    template <typename Type, std::size_t N, std::size_t M>
+    struct Matrix : public BaseMatrix<Type,N,M>
     {
         __SG_CONSTEXPR_MATRIX__ Matrix() {}
-        __SG_CONSTEXPR_MATRIX__ Matrix(const T& object) : BaseMatrix<T,N,M>(object) {}
-        __SG_CONSTEXPR_MATRIX__ Matrix(std::initializer_list<std::initializer_list<T>> initlist) :
-                                BaseMatrix<T,N,M>(initlist) {}
+        __SG_CONSTEXPR_MATRIX__ Matrix(const Type& object) : BaseMatrix<Type,N,M>(object) {}
+        __SG_CONSTEXPR_MATRIX__ Matrix(std::initializer_list<std::initializer_list<Type>> initlist) :
+                                BaseMatrix<Type,N,M>(initlist) {}
 
         // Basic algebraic operations on matrices
-        __SG_CONSTEXPR_MATRIX__ Matrix<T,N,M> operator+(const Matrix<T,N,M>& rhs) const;
-        __SG_CONSTEXPR_MATRIX__ Matrix<T,N,M> operator-(const Matrix<T,N,M>& rhs) const;
-        __SG_CONSTEXPR_MATRIX__ Matrix<T,N,M> operator*(const T& number) const;
-        __SG_CONSTEXPR_MATRIX__ Matrix<T,N,M> operator/(const T& number) const;
+        __SG_CONSTEXPR_MATRIX__ Matrix<Type,N,M> operator+(const Matrix<Type,N,M>& rhs) const;
+        __SG_CONSTEXPR_MATRIX__ Matrix<Type,N,M> operator-(const Matrix<Type,N,M>& rhs) const;
+        __SG_CONSTEXPR_MATRIX__ Matrix<Type,N,M> operator*(const Type& number) const;
+        __SG_CONSTEXPR_MATRIX__ Matrix<Type,N,M> operator/(const Type& number) const;
 
-        __SG_CONSTEXPR_MATRIX__ Matrix<T,N,M>& operator+=(const Matrix<T,N,M>& rhs) { *this = *this + rhs; return *this; }
-        __SG_CONSTEXPR_MATRIX__ Matrix<T,N,M>& operator-=(const Matrix<T,N,M>& rhs) { *this = *this - rhs; return *this; }
-        __SG_CONSTEXPR_MATRIX__ Matrix<T,N,M>& operator*=(const T& object) { *this = *this * object; return *this; }
-        __SG_CONSTEXPR_MATRIX__ Matrix<T,N,M>& operator/=(const T& object) { *this = *this / object; return *this; }
+        __SG_CONSTEXPR_MATRIX__ Matrix<Type,N,M>& operator+=(const Matrix<Type,N,M>& rhs) { *this = *this + rhs; return *this; }
+        __SG_CONSTEXPR_MATRIX__ Matrix<Type,N,M>& operator-=(const Matrix<Type,N,M>& rhs) { *this = *this - rhs; return *this; }
+        __SG_CONSTEXPR_MATRIX__ Matrix<Type,N,M>& operator*=(const Type& object) { *this = *this * object; return *this; }
+        __SG_CONSTEXPR_MATRIX__ Matrix<Type,N,M>& operator/=(const Type& object) { *this = *this / object; return *this; }
 
         // Methods that return separate columns and rows of the matrix
-        __SG_CONSTEXPR_MATRIX__ Matrix<T,N,1> col(std::size_t j) const;
-        __SG_CONSTEXPR_MATRIX__ Matrix<T,1,M> row(std::size_t i) const;
+        __SG_CONSTEXPR_MATRIX__ Matrix<Type,N,1> col(std::size_t j) const;
+        __SG_CONSTEXPR_MATRIX__ Matrix<Type,1,M> row(std::size_t i) const;
+
+        __SG_CONSTEXPR_MATRIX__ Matrix<Type,M,N> T() const { return transpose(*this); }
     };
 
     // And finally, two special cases of the vectors
-    template <typename T, std::size_t N> using ColVector = Matrix<T,N,1>;
-    template <typename T, std::size_t N> using RowVector = Matrix<T,1,N>;
+    template <typename Type, std::size_t N> using ColVector = Matrix<Type,N,1>;
+    template <typename Type, std::size_t N> using RowVector = Matrix<Type,1,N>;
 
     // Simple commutator of two matrices
-    template <typename T, std::size_t N>
+    template <typename Type, std::size_t N>
     __SG_CONSTEXPR_MATRIX__ inline
-    Matrix<T,N,N> commutator(const Matrix<T,N,N>& matrix1, const Matrix<T,N,N>& matrix2)
+    Matrix<Type,N,N> commutator(const Matrix<Type,N,N>& matrix1, const Matrix<Type,N,N>& matrix2)
     {
         return matrix1*matrix2 - matrix2*matrix1;
     }
 
     // Simple transpose of a matrix
-    template <typename T, std::size_t N, std::size_t M>
+    template <typename Type, std::size_t N, std::size_t M>
     __SG_CONSTEXPR_MATRIX__
-    Matrix<T,M,N> transpose(const Matrix<T,N,M>& matrix)
+    Matrix<Type,M,N> transpose(const Matrix<Type,N,M>& matrix)
     {
-        Matrix<T,M,N> result;
+        Matrix<Type,M,N> result {};
         for (std::size_t i=0; i<M; ++i)
         {
             for (std::size_t j=0; j<N; ++j) { result(i,j) = matrix(j,i); }
@@ -141,12 +146,16 @@ namespace SG
         Matrix4x4d& operator-=(const Matrix4x4d& rhs) { *this = *this - rhs; return *this; }
         Matrix4x4d& operator*=(double number) { *this = *this * number; return *this; }
         Matrix4x4d& operator/=(double number) { *this = *this / number; return *this; }
+
+        Matrix4x4d T() const;
     };
 
     // More operations for these matrices
 
     inline Matrix4x4d
     commutator(const Matrix4x4d& matrix1, const Matrix4x4d& matrix2);
+
+    Matrix4x4d transpose(const Matrix4x4d& matrix);
 
     // These are two separate types which made first of all in a view of the ability
     // of optimizing operations of multiplications on the matrices 4x4
@@ -198,16 +207,16 @@ namespace SG
     };
 }
 
-template <typename T, std::size_t N, std::size_t M, std::size_t alignment>
+template <typename Type, std::size_t N, std::size_t M, std::size_t alignment>
 __SG_CONSTEXPR_MATRIX__
-SG::BaseMatrix<T,N,M,alignment>::BaseMatrix(const T& object)
+SG::BaseMatrix<Type,N,M,alignment>::BaseMatrix(const Type& object)
 {
     for (auto& each: data) { each = object; }
 }
 
-template <typename T, std::size_t N, std::size_t M, std::size_t alignment>
+template <typename Type, std::size_t N, std::size_t M, std::size_t alignment>
 __SG_CONSTEXPR_MATRIX__
-SG::BaseMatrix<T,N,M,alignment>::BaseMatrix(std::initializer_list<std::initializer_list<T>> initlist)
+SG::BaseMatrix<Type,N,M,alignment>::BaseMatrix(std::initializer_list<std::initializer_list<Type>> initlist)
 {
     // Check the validity of the provided initializer list containing 
     // the initial matrix
@@ -222,8 +231,8 @@ SG::BaseMatrix<T,N,M,alignment>::BaseMatrix(std::initializer_list<std::initializ
     }
 }
 
-template <typename T, std::size_t N, std::size_t M, std::size_t alignment>
-std::ostream& operator<<(std::ostream& os, const SG::BaseMatrix<T,N,M,alignment>& object)
+template <typename Type, std::size_t N, std::size_t M, std::size_t alignment>
+std::ostream& operator<<(std::ostream& os, const SG::BaseMatrix<Type,N,M,alignment>& object)
 // 'object' may refer to all SG::Matrix, SG::Matrix4x4d,....
 // as they all inherited the interface of the BaseMatrix subobject 
 {
@@ -248,61 +257,61 @@ std::ostream& operator<<(std::ostream& os, const SG::BaseMatrix<T,N,M,alignment>
 
 // Basic arithmetic operations
 
-template <typename T, std::size_t N, std::size_t M>
+template <typename Type, std::size_t N, std::size_t M>
 __SG_CONSTEXPR_MATRIX__
-SG::Matrix<T,N,M> SG::Matrix<T,N,M>::operator+(const SG::Matrix<T,N,M>& rhs) const
+SG::Matrix<Type,N,M> SG::Matrix<Type,N,M>::operator+(const SG::Matrix<Type,N,M>& rhs) const
 {
-    SG::Matrix<T,N,M> result {};
-    for (std::size_t i=0; i<SG::Matrix<T,N,M>::bufsize; ++i)
+    SG::Matrix<Type,N,M> result {};
+    for (std::size_t i=0; i<SG::Matrix<Type,N,M>::bufsize; ++i)
     {
-        result.data[i] = SG::BaseMatrix<T,N,M>::data[i] + rhs.data[i];
+        result.data[i] = SG::BaseMatrix<Type,N,M>::data[i] + rhs.data[i];
     }
     return result;
 }
 
-template <typename T, std::size_t N, std::size_t M>
+template <typename Type, std::size_t N, std::size_t M>
 __SG_CONSTEXPR_MATRIX__
-SG::Matrix<T,N,M> SG::Matrix<T,N,M>::operator-(const SG::Matrix<T,N,M>& rhs) const
+SG::Matrix<Type,N,M> SG::Matrix<Type,N,M>::operator-(const SG::Matrix<Type,N,M>& rhs) const
 {
-    SG::Matrix<T,N,M> result {};
-    for (std::size_t i=0; i<SG::Matrix<T,N,M>::bufsize; ++i)
+    SG::Matrix<Type,N,M> result {};
+    for (std::size_t i=0; i<SG::Matrix<Type,N,M>::bufsize; ++i)
     {
-        result.data[i] = SG::BaseMatrix<T,N,M>::data[i] - rhs.data[i];
+        result.data[i] = SG::BaseMatrix<Type,N,M>::data[i] - rhs.data[i];
     }
     return result;
 }
 
-template <typename T, std::size_t N, std::size_t M>
+template <typename Type, std::size_t N, std::size_t M>
 __SG_CONSTEXPR_MATRIX__
-SG::Matrix<T,N,M> SG::Matrix<T,N,M>::operator*(const T& number) const
+SG::Matrix<Type,N,M> SG::Matrix<Type,N,M>::operator*(const Type& number) const
 {
-    SG::Matrix<T,N,M> result {};
-    for (std::size_t i=0; i<SG::Matrix<T,N,M>::bufsize; ++i)
+    SG::Matrix<Type,N,M> result {};
+    for (std::size_t i=0; i<SG::Matrix<Type,N,M>::bufsize; ++i)
     {
-        result.data[i] = SG::BaseMatrix<T,N,M>::data[i] * number;
+        result.data[i] = SG::BaseMatrix<Type,N,M>::data[i] * number;
     }
     return result;
 }
 
-template <typename T, std::size_t N, std::size_t M>
+template <typename Type, std::size_t N, std::size_t M>
 __SG_CONSTEXPR_MATRIX__
-SG::Matrix<T,N,M> SG::Matrix<T,N,M>::operator/(const T& number) const
+SG::Matrix<Type,N,M> SG::Matrix<Type,N,M>::operator/(const Type& number) const
 {
-    SG::Matrix<T,N,M> result {};
-    for (std::size_t i=0; i<SG::Matrix<T,N,M>::bufsize; ++i)
+    SG::Matrix<Type,N,M> result {};
+    for (std::size_t i=0; i<SG::Matrix<Type,N,M>::bufsize; ++i)
     {
-        result.data[i] = SG::BaseMatrix<T,N,M>::data[i] / number;
+        result.data[i] = SG::BaseMatrix<Type,N,M>::data[i] / number;
     }
     return result;
 }
 
 // Multiplication on a number on the right hand side
-template <typename T, std::size_t N, std::size_t M>
+template <typename Type, std::size_t N, std::size_t M>
 __SG_CONSTEXPR_MATRIX__
-SG::Matrix<T,N,M> operator*(const T& number, const SG::Matrix<T,N,M>& object)
+SG::Matrix<Type,N,M> operator*(const Type& number, const SG::Matrix<Type,N,M>& object)
 {
-    SG::Matrix<T,N,M> result {};
-    for (std::size_t i=0; i<SG::Matrix<T,N,M>::bufsize; ++i)
+    SG::Matrix<Type,N,M> result {};
+    for (std::size_t i=0; i<SG::Matrix<Type,N,M>::bufsize; ++i)
     {
         result.data[i] = number * object.data[i];
     }
@@ -310,20 +319,38 @@ SG::Matrix<T,N,M> operator*(const T& number, const SG::Matrix<T,N,M>& object)
 }
 
 // The matrix multiplication; note that it requires three dimensions
-template <typename T, std::size_t N, std::size_t P, std::size_t M>
+template <typename Type, std::size_t N, std::size_t P, std::size_t M>
 __SG_CONSTEXPR_MATRIX__
-SG::Matrix<T,N,M> operator*(const SG::Matrix<T,N,P>& object1, const SG::Matrix<T,P,M>& object2) 
+SG::Matrix<Type,N,M> operator*(const SG::Matrix<Type,N,P>& object1, const SG::Matrix<Type,P,M>& object2) 
 {
-    SG::Matrix<T,N,M> result {};
+    SG::Matrix<Type,N,M> result {};
     for (std::size_t i=0; i<N; ++i)
     {
         for (std::size_t j=0; j<M; ++j)
         {
-            T tmp = object1(i,0) * object2(0,j);
+            Type tmp = object1(i,0) * object2(0,j);
             for (std::size_t k=1; k<P; ++k) { tmp += object1(i,k) * object2(k,j); }
             result(i,j) = tmp;
         }
     }
+    return result;
+}
+
+template <typename Type, std::size_t N, std::size_t M>
+__SG_CONSTEXPR_MATRIX__
+SG::Matrix<Type,N,1> SG::Matrix<Type,N,M>::col(std::size_t j) const
+{
+    SG::Matrix<Type,N,1> result {};
+    for (std::size_t i=0; i<N; ++i) { result.data[i] = SG::BaseMatrix<Type,N,M>::data[i*4 + j]; }
+    return result;
+}
+
+template <typename Type, std::size_t N, std::size_t M>
+__SG_CONSTEXPR_MATRIX__
+SG::Matrix<Type,1,M> SG::Matrix<Type,N,M>::row(std::size_t i) const
+{
+    SG::Matrix<Type,1,M> result {};
+    for (std::size_t j=0; i<M; ++i) { result.data[i] = SG::BaseMatrix<Type,N,M>::data[i*4 + j]; }
     return result;
 }
 
@@ -420,7 +447,7 @@ operator*(const SG::Matrix4x4d& matrix1, const SG::Matrix4x4d& matrix2)
         }
         // Then, all the normal part
         __m256d _lhs_elements, _rhs_elements, _res_elements;
-        __m128d _values_low, _values_high, _high64;
+        __m128d _values_low, _values_high;
         for (std::size_t i=0; i<4; ++i)
         {
             for (std::size_t j=0; j<4; ++j)
@@ -439,7 +466,6 @@ operator*(const SG::Matrix4x4d& matrix1, const SG::Matrix4x4d& matrix2)
                 result.data[i*4+j] = _mm_cvtsd_f64(_mm_add_sd(_values_low, _values_high));
             }
         }
-        
     #else 
         for (std::size_t i=0; i<4; ++i)
         {
@@ -460,6 +486,18 @@ SG::commutator(const SG::Matrix4x4d& matrix1, const SG::Matrix4x4d& matrix2)
 {
     return matrix1*matrix2 - matrix2*matrix1;
 }
+
+SG::Matrix4x4d SG::transpose(const SG::Matrix4x4d& matrix)
+{
+    SG::Matrix4x4d result {};
+    for (std::size_t i=0; i<4; ++i)
+    {
+        for (std::size_t j=0; j<4; ++j) { result.data[i*4+j] = matrix.data[j*4+i]; }
+    }
+    return result;
+}
+
+SG::Matrix4x4d SG::Matrix4x4d::T() const { return SG::transpose(*this); }
 
 // Vectorized arithmetic operations of ColVector4d
 // (All are made explicitly inline for optimization)
@@ -590,7 +628,7 @@ SG::RowVector4d::operator/(double number) const
 #endif
 
 // TODOs:
-// 1. Realise multiplication of a matrix on a vector
+// 1. Realise multiplication of a matrix on a vector, and the dot product
 // 2. SSE/AVX for N=4, M=4 cases (but for what types?... seems, for doubles.)
 // 3. Exponential function (and here we will see possible growth in performance)
 // 4. Fundamental bases, identity matrices...
